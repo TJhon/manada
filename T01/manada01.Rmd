@@ -1,0 +1,140 @@
+---
+title: "Adaptacion R 01"
+author: "La manada-01"
+date: "5/13/2020"
+output:
+  word_document:
+    reference_docx: ref/ref.docx
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+# comparaciones de codigo Stata y R
+
+- clear al == rm(list = ls())
+    - elimina toda la base de datos y variables anteriormente utilizadas 
+- use "pathdata" == haven::read_dta("data.dta")
+    - leen la base de datos, en `R` se automatiza en proyectos
+- rename datos_viejos datos_nuevos == data_nombre <- haven::read_dta("data.dta")
+- label var salario " = expss::apply_labels(data, col = "label", col2 = "label2")
+    - Anades etiquetas a las variables o columnas de los datos
+- generate lvar0 = ln(var0) == mutate(data, lvar0 =log(10))
+    - genera nuevas variables, de ecuaciones
+- egen var = mean(var0)  este codigo es usado para extraer el dato del resultado como un escalar, para presentar como datos
+- gen dummy = 1 if educ > 14 == mutate(data, dummy = ifelse(educ > 14, 1, 0))
+    - Genera variables con condicionantes, en el ejemplo con stata creas una nueva columna llamada 'dummy' si la variable educ es mayor o igual a 14, pero deja vacios si no lo son, en `R` se resume asi: `dummy = ifelse(salario >= 14, 1, 0)` si la variable educ es mayor o igual a 14
+imprime 1, en otros casos 0 
+
+- reg y x1 x2 == lm(y ~ x1 + x2, data = nombre de la base de datos)
+    - Regresion lineal 
+    - En `R` puedes guardar los datos de la regresion asignando un nombre `nombre_reg <- lm(y ~ x1 + x2, data = nombre de la base de datos)
+    
+- histogram y twoway == ggplot 
+    - de datos a graficos
+    
+# En trabajo 
+## Paquetes necesarios
+
+```{r}
+# install.packages('tidyverse')
+# install.packages('remotes')
+library(tidyverse)
+# install.packages('expss')
+library(expss)
+# remotes::iinstall_github("jacob-long/jtools")
+library(jtools)
+# remotes::install_github("datalorax/equatiomatic")
+library(equatiomatic)
+```
+
+## Base de datos
+
+En el dofile, de las lineas 5 - 29, sin incluir la media y la desviacion standar de las variables
+
+```{r}
+rm(list = ls())
+salario <- haven::read_dta("Stata/salarios.dta")
+# Generar variables 
+salario1 <- salario %>% # creamos una nueva base de datos para comparar
+    # con la anterior base de datos
+    mutate(lsalario = log(Salario),
+           exper2 = exper^2,
+           educ2 = educ^2,
+           dumm = ifelse(educ >= 14, 1, 0)
+           ) %>% 
+    apply_labels(Salario = "salarios en miles de soles para Junín", 
+                 educ = "años de educación", 
+                 exper = "años de experiencia",
+                 lsalario = "logaritmo neperiano del salario",
+                 educ2 = "años al cuadrado de educación", 
+                 exper2 = "años al cuadrado de experiencia"
+    )
+
+tibble(
+    variable = c('Salarios', 'educacion'), 
+    media = c(mean(salario1$Salario), mean(salario1$educ)),
+    sd = c(sd(salario1$Salario, sd(salario1$educ))))
+```
+
+## Despues de la linea 31
+
+```{r}
+r1 <- lm(lsalario ~ educ + exper, data = salario1)
+#regresion
+summ(r1)
+```
+
+## Graficos RBASE
+
+### Solo R 
+
+```{r}
+hist(salario1$Salario)
+```
+
+```{r}
+plot(salario1$educ, salario1$Salario)
+```
+
+## Graficos ggplot2
+
+
+```{r}
+salario1 %>% 
+    ggplot(aes(Salario)) + 
+    geom_histogram(
+        aes(color = as_factor(dumm),
+            fill = as_factor(dumm)
+            ), 
+        alpha=0.4, position = 'identity', bin = 50
+        )+
+    theme_bw() +
+    labs(fill="Dummy") + 
+    scale_fill_manual(values = c("#00AFBB", "#E7B800")) +
+    scale_color_manual(values = c("#00AFBB", "#E7B800")) 
+```
+
+### scatter plot
+
+```{r}
+salario1 %>% 
+    ggplot(aes(educ, Salario)) + geom_point(aes(color = as_factor(dumm))) + 
+    theme_bw() + geom_smooth(method = lm, se = F) + 
+    labs(title ="Gráfico de dispersión con ajuste lineal", 
+         caption = "Fuente: calculo de la manada", 
+         x = "Anios de educacion", y = "Salarios" 
+         ) + 
+    theme(legend.position = "none")
+```
+
+## extraccion automatica de los modelos predictivos 
+
+```{r, results='asis'}
+extract_eq(r1)
+extract_eq(r1, use_coefs = TRUE)
+```
+
