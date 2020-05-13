@@ -3,7 +3,10 @@ title: "Adaptacion R 01"
 author: "La manada-01"
 date: "5/13/2020"
 output:
-  word_document:
+  prettydoc::html_pretty:
+    theme: cayman
+    highlight: github
+  word_document: 
     reference_docx: ref/ref.docx
   html_document:
     df_print: paged
