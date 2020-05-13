@@ -30,6 +30,7 @@ replace dummy=0 if dummy==.
 
 *regresion
 reg lsalario educ exper
+
 * histograma
 histogram salario, normal kdensity kdenopts(lcolor(red)) legend(on) saving(gr5, replace)
 * grafico
