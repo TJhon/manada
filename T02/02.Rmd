@@ -1,0 +1,109 @@
+---
+title: "Datos"
+author: "La manada-02"
+date: "5/13/2020"
+output:
+  pdf_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = F, message = F)
+```
+
+# Resumen del do file
+
+- Importar datos
+- Renombrar variables
+- Agregar etiquetas
+- Generar nuevas variables
+- Estadistica descriptiva
+- Regresion lineal
+- Graficos
+    - Histogramas
+    - Distribucion de densidad
+    - Scatter plot (graficos de dispersion)
+
+
+# Datos
+
+Economic Labor Market Panel Survey (ELMPS), para los paises (en ingles):
+Egypt, Arab Rep. desde 1998 hasta el 2006. 
+
+El diccionario de los datos esta disponible en https://catalog.ihsn.org/index.php/catalog/5869/data-dictionary/F9?file_name=elmps%202012%20comptbl%2088_12%20v2.1
+
+
+
+# Importar datos
+
+Usamos la libreria `haven` para importar datos de Stata en `R`, asi tambien como `tidiverse` para la manipulacion de datos y usar el acortador de ` %>% `^[En terminos sencillo significa que una vez realizado un proceso pasas al siguiente paso con la data generada] para simplificar las funciones, ademas de guardar la data para guardar memoria (41mb) en la pc con el comando base `saveRds`, para luego leer la base de datos Rds (3mb) con el comando `readRds` y asignar el identificador del data frame como *panel*.
+
+
+```{r}
+rm(list = ls())
+library(haven)
+library(tidyverse)
+# qw <- read_dta("tarea/qw.dta")
+read_dta("tarea/ELMPS Panel data models.dta") %>%  #esta base de datos pesa 41.4mb
+    saveRDS("tarea/panel.rds") #asi que se guarda como data R se reduce a 3 mb
+panel <- readRDS("tarea/panel.rds")
+```
+
+# Renombrar variables
+
+Como las columnas estan en ingles necesitamos actualizarla a espaniol, usando el commando `rename` guiandonos del diccionario presentado anteriormente.
+
+
+```{r}
+
+panel1 <- panel %>%  
+    rename( # renombrar variables
+        anio = round, # anio de la encuesta
+        id = indid, #identificador de persona
+        id_casa = hhid, #identificador del hogar
+        edad = age, # Edad de la persona
+        grado_acad10 = educ2, #grado academico edad >= 10
+        grado_acad6 = educlvl, #grado academico edad >= 6 
+        anios_de_escuela = yrschl, # anios en la escuela
+        anio_primer_trabajo = yrjob1, # yrjob1 == job1_y ano de inicio trabajo
+        anios_trabajo_1_tra = job1_01, # anios trabajando en su primer empleo
+        sector_01 = job1_05 # sector del primer empleo
+        )
+```
+
+# Agregar etiquetas
+
+De igual manera actualizamos las etiquetas de la base de datos con el paquete `expess`, 
+
+```{r}
+library(expss) # cambiar etiquetas
+panel1 <- panel1 %>% 
+    apply_labels( # comando de asiganacion y cambio de etiquetas
+        anio = "anio de la encuesta" # etiqueta para anio
+        )
+```
+
+# Generar nuevas variables y conservar variables importantes
+
+Como son datos laborales nos centraremos en la experiencia total de la persona encuestada y alguna otra variable *falta contenido aqui(agregar algo)*, para la presentacion de los datos  finales se seleccionara variables relevantes con el comando `select`.
+
+```{r}
+# en el documento de referencia se compara el censo y la 
+# panel1 <- panel1 %>%  esperar la confirmacion de la manada
+#     experiencia
+```
+
+# Data final 
+
+```{r}
+glimpse(panel1)
+```
+
+
+
+# Estadistica descriptiva
+
+# Regresion lineal
+# Graficos
+
+
