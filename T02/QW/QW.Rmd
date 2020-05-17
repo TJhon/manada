@@ -1,0 +1,132 @@
+---
+title: "QW"
+author: "US"
+output:
+  bookdown::word_document2:
+    fig_caption: yes
+  pdf_document: default
+  word_document: default
+---
+
+
+# La adaptacion en R 
+
+- importar
+- renombrar, etiquetas, 
+- nuevas variables, por grupos
+- tablas 
+- stadistica descriptiva 
+- graficos(caja, histogramas, densidad, correlaciones, dispercion),
+- regresion, prediccion
+- visualizacion de heterocedasticidad(aunque no vi la correcion de esta)
+- comparacion de modelos
+
+# El trabajo 
+
+## Importar datos
+
+```{r}
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+haven::read_dta('dat/qw.dta') %>% 
+    saveRDS('dat/qw.rds')
+qw <- read_rds('dat/qw.rds')
+options(kableExtra.auto_format = FALSE)
+```
+## Explorar Datos
+
+Por lo que se desconoce las etiquetas de los distritos pero sirve para hacer comparaciones
+
+```{r, result = 'asis'}
+qw <- qw %>%
+    mutate(sexo = factor(sexo, labels = c("Masculino", "Femenino")),
+                    D = factor(D, labels = c('secundaria', "primaria")),
+                    
+                    ) %>% drop_na() 
+qw %>% 
+    group_by(Distrito, D, sexo ) %>% 
+    summarise('N()' = n(), 
+              Estudiante_Anemia = sum(d_cnane),
+              Atencion = mean(aten), 
+              Peso = mean(peso),
+              Talla = mean(talla), 
+              imc = mean(imc)
+              ) %>% 
+    kable()
+
+qw %>% 
+    group_by(D, sexo ) %>% 
+    summarise('N()' = n(), 
+              Estudiante_Anemia = sum(d_cnane),
+              Atencion = mean(aten), 
+              Peso = mean(peso),
+              Talla = mean(talla)
+              ) %>% 
+    kable()
+```
+
+
+## Generar nuevas variables 
+
+Etiquetas ya puestas, el analisis se limitara hacer renombrar variables
+
+Clases de variables: cognitivo  , condicion de la persona
+
+    - cognitivo:  `p[i]_c` i en c(1:4), mem_ct, aten, 
+        - matematica, comunicacion en base 20
+    - intermedia: asistencia faltas, estas mutuamente excluyentes
+    - condicion: peso, talla, imc, d_norm, d_sobr, tamiza_anem descarte, dcnamem  
+
+Las variables excluidas estan implicitamente en otras
+
+
+```{r}
+qw1 <- qw %>% 
+    select(-nombre, -Distrito, -id, -faltas, -d_bajo, -d_snane) %>% 
+    mutate(edad_mese = meses_t, grado = D,
+           correctasT = p1_c + p2_c + p3_c + p4_c, # total de preguntas p correctas
+           pregunT  = p1_c/p1_ + p2_c/p2_ + p3_c/p3_ + p4_c/p4_, # preguntas p totales aproximacion 
+           ind_corre = correctasT/pregunT)   # indice de preguntas p correctas
+```
+
+## tablas 
+
+```{r}
+qw1 %>% 
+    select(sexo, edad_mese, grado, correctasT, ind_corre, everything()) %>% 
+    group_by(grado, sexo) %>% 
+    summarise(
+        "promedio p1-p4" = mean(correctasT),
+        "promedio indice p" = mean(ind_corre),
+        "promedio atencion" = mean(aten),
+        "promedio edad en meses" = mean(edad_mese)
+        ) %>% 
+    kable()
+```
+    # suponnemos que la atencion es `y`
+
+## stadistica descriptiva 
+
+Usar el comando gather pero con las variables relevantes seleccionadas para no perder tiempo
+gb, y summarise
+
+
+## Graficos(caja, histogramas, densidad, correlaciones, dispercion),
+
+
+```{r}
+
+
+
+
+qw1 %>% mutate(control = factor(ifelse(edad_mese < 144,1 , 0 ))) %>% 
+    ggplot(aes(edad_mese, aten, color = control)) +
+    geom_point(aes(shape = sexo), size = 5, alpha = .5) + theme_bw() + geom_smooth(se = F)
+```
+
+
+
+## regresion, prediccion
+## visualizacion de heterocedasticidad(aunque no vi la correcion de esta)
+## comparacion de modelos
