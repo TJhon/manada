@@ -1,27 +1,20 @@
 ---
-title: "QW"
-author: "US"
-output:
-  pdf_document: default
-  bookdown::word_document2:
-    fig_caption: yes
-  word_document: default
+title: "Untitled"
+author: "La manada-02"
+date: "5/17/2020"
+output: word_document
 ---
 
-```{r setup, include=F}
+``
+
+```{r setup, include=FALSE}
 knitr::opts_chunk$set(fig.pos = "H", # Fijar posicion de las figuras
-echo = F, # si es FALSE Correr el codigo pero mostrarlo
-message = F, # si es FALSE Mensajes omitidos
-warning = F, # si es FALSE Advertencias omitidas
-out.extra = "",
+echo = T, # si es FALSE Correr el codigo pero mostrarlo
+message = T, # si es FALSE Mensajes omitidos
+warning = T, # si es FALSE Advertencias omitidas
 include = T, # si es FALSE
-cache = F #
-)
-options(knitr.duplicate.label = "allow", # permitir Chunk names repetidos
-knitr.table.format = function() { # funcione de acuerdo a la salida del texto
-if (knitr::is_latex_output()) 'latex' else 'pandoc'
-}, digits = 1,
-kableExtra.auto_format = FALSE
+out.extra = "",
+cache = T #
 )
 ```
  
@@ -161,35 +154,4 @@ qw1 %>%
          ) %>% 
     ggplot(aes(edad_mese, aten, color = control)) +
     geom_point(aes(shape = sexo), size = 5, alpha = .3) + theme_bw() + geom_smooth(se = F)
-```
-
-
-```{r grafico simple}
-library(gridExtra); library(GGally)
-qw1 %>% 
-  ggplot(aes(control, aten)) +
-  geom_violin(aes(color = control), trim = FALSE) +
-  geom_dotplot(aes(color = control,  fill = control), binaxis = 'y', stackdir = 'center') + theme_bw() +
-  coord_flip()
-
-#ggpairs(qw1)
-```
-
-
-
-## Estimacion 
-
-Y: Control por grupos (Atencion, Mem_ct)
-
-```{r}
-
-```
-
-## comparacion de modelos
-
-
-
-# Apendice
-
-```{r ref.label=knitr::all_labels(), echo=TRUE, eval=FALSE}
 ```
