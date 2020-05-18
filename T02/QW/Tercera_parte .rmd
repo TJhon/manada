@@ -1,0 +1,220 @@
+---
+title: "TERCERA PARTE DE COMANDOS A APLICAR"
+author: "Manricon"
+output:
+  word_document:
+    reference_docx: ref/ref.docx
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+    
+    ```{r setup, include=F}
+knitr::opts_chunk$set(fig.pos = "H", # Fijar posicion de las figuras
+                      echo = T, # si es FALSE Correr el codigo pero mostrarlo
+                      message = F, # si es FALSE Mensajes omitidos
+                      warning = F, # si es FALSE Advertencias omitidas
+                      out.extra = "",
+                      include = T, # si es FALSE
+                      cache = F, #
+                      results = "asis"
+                      )
+options(knitr.duplicate.label = "allow", # permitir Chunk names repetidos
+        knitr.table.format = function() { # funcione de acuerdo a la salida del texto
+            if (knitr::is_latex_output()) 'latex' else 'pandoc'
+        }, digits = 1,
+        kableExtra.auto_format = FALSE
+)
+
+```
+
+# Clear all 
+
+```{r clear}
+rm(list = ls())
+```
+
+# Use 'path'
+
+```{r use}
+library(tidyverse)
+haven::read_dta('dat/qw.dta') %>% # leer qw.dta
+    saveRDS('dat/qw.rds') # guardar data .r
+qw <- read_rds('dat/qw.rds') # leer qw.ds
+```
+
+# Limpieza de datos
+
+Nombre de las variables de la data original `r names(qw)`
+
+
+```{r drop-na}
+qw %>% 
+    select(p1:aten) %>% 
+    drop_na() %>% #eliminamos los 'missing values'
+    head(6) %>% 
+    knitr::kable()
+```
+
+Se trabaja con estos datos:aten, sexo, tamiza_ane(nivel de hemoglobina), p3(planteamiento), p4(cancelacion de pares), IMCC, reasignando la como la base de datos `qw1`
+
+
+```{r select}
+qw1 <- qw %>% 
+    drop_na() %>% 
+  select(aten, sexo, tamiza_ane, p3, p4, imc) %>% 
+  mutate(sexo = factor(sexo, labels = c("Masculino", "Femenino")))
+qw1 %>% head(6) %>% knitr::kable()
+```
+
+
+Descripcion de las variables
+
+```{r resumen}
+summary(qw1) %>% #resumen
+  knitr::kable()
+
+```
+
+## Atencion
+
+
+
+```{r H_atencion}
+qw1 %>% 
+  ggplot(aes(aten)) +
+  geom_histogram(aes(y = ..density.. ), fill = "#00AFBB", color = "white") +
+  geom_density(size = 2, color = "#D8DA9E")  +
+  theme_minimal() +
+  labs(x = "Atencion de los estudiantes", 
+       caption = "Datos: QW.dta")
+```
+
+## Nivel de Hemoglobina
+
+```{r H-Hemoglobina}
+qw1 %>% 
+  ggplot(aes(tamiza_ane)) +
+  geom_histogram(aes(y = ..density.. ), fill = "#00AFBB", color = "white") +
+  geom_density(size = 2, color = "#D8DA9E")  +
+  theme_minimal() +
+  labs(x = "Hemoglobina de los estudiantes", 
+       caption = "Datos: QW.dta")
+```
+
+# Diagrama de caja y violin
+
+## Atencion
+
+```{r box_aten}
+qw1 %>% 
+  ggplot(aes(aten)) +
+  geom_boxplot(color = "blue", fill = "steelblue") +scale_color_brewer(palette  = "Dark2") +
+  theme_minimal()   +
+  labs(x = "Atencion de los estudiantes", 
+       caption = "Datos: QW.dta")
+```
+
+## Hemoglobina
+
+
+```{r box_hemo}
+qw1 %>% 
+  ggplot(aes(tamiza_ane)) +
+  geom_boxplot(color = "blue", fill = "steelblue") +scale_color_brewer(palette  = "Dark2") +
+  theme_minimal()   +
+  labs(x = "Hemoglobina de los estudiantes", 
+       caption = "Datos: QW.dta")
+```
+
+# correlaciones
+
+```{r corr}
+library(GGally)
+ggpairs(qw1) + theme_minimal()
+```
+
+# Estimacion
+
+## Modelo 1
+
+```{r est1}
+library(broom)
+model <- aten ~ sexo + tamiza_ane + p3 + p4 +imc #definimos el modelo
+
+est1 <- lm(model, data = qw1)
+tidy(est1) %>% 
+  knitr::kable()
+```
+
+Extraccion del modelo
+
+```{r eq1}
+library(equatiomatic)
+extract_eq(est1)
+extract_eq(est1, use_coefs = T)
+```
+
+## Modelo 2 
+
+```{r est2}
+qw1 <- qw1 %>% 
+  mutate(tamiza_ane = tamiza_ane/12)
+model <- aten ~ sexo + tamiza_ane + p3 + p4 +imc
+est2 <- lm(model, data = qw1)
+tidy(est1) %>% 
+  knitr::kable()
+```
+
+Extraccion del modelo
+
+```{r eq2}
+
+extract_eq(est2)
+extract_eq(est2, use_coefs = T)
+```
+
+
+# Normalidad de los residuos 
+
+Del ultimo modelo
+
+```{r residuos}
+qw1$residuals.est2 <- residuals( est2 ) # residuos
+qw1$rstudent.est2 <- rstudent( est2 ) # residuos estudentizados
+```
+
+Normalidad de residuos 
+
+```{r sha}
+sha <- shapiro.test(qw1$rstudent.est2)
+sha
+```
+
+No hay normalidad de residuos 
+
+
+# Multicolineadlidad 
+
+```{r vif}
+library(caret)
+car::vif(est1)
+```
+
+# Estimacion robusta
+
+```{r est3}
+library(MASS)
+est3 <-  rlm(model, data = qw1)
+tidy(est3) %>% knitr::kable()
+```
+
+# Modelos juntos
+
+```{r all}
+stargazer::stargazer(est1, est2, est3, type = "latex", header = F, title = "Todos los modelos")
+
+```
+
+
+
